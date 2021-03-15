@@ -1,0 +1,331 @@
+---
+title: "Assessing the impact of songs on people in different ways based on the audio features"
+output: 
+  html_document: 
+    fig_height: 4
+    highlight: pygments
+    theme: spacelab
+---
+
+## Project done by: V.M.KARTHIK SAI
+
+### Setup - Imported Spotify Dataset and Grammy Awards Dataset
+
+### Source of Datasets - Kaggle - (https://www.kaggle.com/yamaerenay/spotify-dataset-19212020-160k-tracks) & (https://www.kaggle.com/unanimad/grammy-awards)
+
+### Load packages if any using library(packagename)
+```{r}
+rm(list=ls())
+library(dplyr)
+library(ggplot2)
+```
+
+* * *
+
+### About the problem statement:
+
+### I am assessing how different audio features of a song influence/impact people in different ways and find out what audio features were responsible for songs that got awards and for the ones that didn't get an award by using two datasets.
+
+* * *
+
+### Chosen Datasets - Spotify Dataset and Grammy Awards Dataset
+```{r}
+setwd("C:/Users/KARSAI/Desktop/Data Analytics Project")
+spotify=read.csv("data.csv")
+grammy=read.csv("the_grammy_awards.csv")
+genres=read.csv("data_by_genres.csv")
+```
+
+
+### Description of Dataset: Spotify Dataset - This dataset contains more than 160,000 songs collected from Spotify Web API with audio features of songs released in between 1921 and 2020. Grammy Awards Dataset - This dataset contains 6323 Grammy Awards presented by The Recording Academy to recognize achievements in the music industry.
+
+### Basic commands to describe dataset: 
+
+### 1 - Structure
+```{r}
+str(spotify)
+str(grammy)
+```
+
+### 2 - Dimension
+```{r}
+dim(spotify)
+dim(grammy)
+```
+
+### 3 - Class
+```{r}
+class(spotify)
+class(grammy)
+```
+
+### 4 - Type
+```{r}
+typeof(spotify)
+typeof(grammy)
+```
+
+### 5 - Variables
+```{r}
+names(spotify)
+names(grammy)
+```
+
+### 6 - Summary
+```{r}
+summary(spotify)
+summary(grammy)
+```
+
+* * *
+
+### Frame your objectives
+
+### 1. To find out the number of positive and negative songs in the 20th century and 21st century based on the valence audio feature.
+```{r}
+spotify %>%
+  filter(valence>0.5 & year<2001) %>%
+  summarise(num_of_ps_20th_cent=n())
+```
+
+```{r}
+spotify %>%
+  filter(valence<=0.5 & year<2001) %>%
+  summarise(num_of_ns_20th_cent=n())
+```
+
+```{r}
+spotify %>%
+  filter(valence>0.5 & year>=2001) %>%
+  summarise(num_of_ps_21st_cent=n())
+```
+
+```{r}
+spotify %>%
+  filter(valence<=0.5 & year>=2001) %>%
+  summarise(num_of_ns_21st_cent=n())
+```
+
+### Inference:
+
+### Number of positive songs are greater than the number of negative songs in the 20th century.
+
+### Number of negative songs are greater than the number of positive songs in the 21st century.
+
+### 2. Visualizing the number of positive and negative songs in the 20th century and 21st century based on the valence audio feature.
+```{r}
+ggplot(spotify %>% filter(valence>0.5 & year<2001) %>% select(year),aes(x=year,fill=year)) + geom_bar() +xlab("20th Century") +ylab("Number of positive songs")
+```
+
+```{r}
+ggplot(spotify %>% filter(valence<=0.5 & year<2001) %>% select(year),aes(x=year,fill=year)) + geom_bar() +xlab("20th Century") +ylab("Number of negative songs")
+```
+
+```{r}
+ggplot(spotify %>% filter(valence>0.5 & year>=2001) %>% select(year),aes(x=year,fill=year)) + geom_bar() +xlab("21st Century") +ylab("Number of positive songs")
+```
+
+```{r}
+ggplot(spotify %>% filter(valence<=0.5 & year>=2001) %>% select(year),aes(x=year,fill=year)) + geom_bar() +xlab("21st Century") +ylab("Number of negative songs")
+```
+
+### 3. To find out the percentage of songs with high energy that has got an award and for songs that has not got an award.
+```{r}
+newgrammy <- grammy
+names(newgrammy)[names(newgrammy) == "nominee"] <- "name"
+test<-merge(spotify,newgrammy,by="name")
+c1<-test %>%
+  filter(energy>0.5 & winner=="True") %>%
+  summarise(count=n())
+phet<-round(c1/2982*100,2) ##2982 is total number of songs with high energy
+print(paste(phet,"%"))
+```
+
+### 618 songs from grammy awards dataset weren't available in spotify dataset.
+
+```{r}
+c2<-test %>%
+  filter(energy>0.5 & winner=="False") %>%
+  summarise(count=n())
+phef<-round(c2/2982*100,2)
+print(paste(phef,"%"))
+```
+
+### Inference:
+
+### There is a higher percentage of songs with high energy that has got an award than for songs with high energy that have not got an award.
+
+### 4. To check if mode and valence are proportional to each other when saying a song is positive or negative.
+```{r}
+ggplot(test, aes(x = valence, y = mode)) + geom_point(size = 1) + xlab("Valence") +ylab("Mode")
+```
+
+### Inference:
+
+### On observing the plot, we can see that mode and valence are not proportional to each other.
+
+### 5. To find out how many negative songs got an award based on the valence audio feature.
+```{r}
+test %>%
+  filter(valence<=0.5 & winner=="True") %>%
+  summarise(num_of_ns_got_award=n())
+```
+
+### 6. To find out the average value of danceability for songs that have not got an award.
+```{r}
+test %>%
+  filter(winner=="False") %>%
+  summarise(avgval=round(mean(danceability),2))
+```
+
+### 7. To visualize the difference in audio features values for songs that have got an award and for songs that have not got an award.
+
+```{r}
+col1<-test %>%
+  filter(winner=="True")
+```
+
+```{r}
+col2<-test %>%
+  filter(winner=="False")
+```
+
+### Calculating the mean difference of each audio feature for the two category of songs (here category is of two types - songs that have got an award and songs that have not got an award).
+
+```{r}
+mean(col1$acousticness) - mean(col2$acousticness)
+mean(col1$danceability) - mean(col2$danceability)
+mean(col1$duration_ms) - mean(col2$duration_ms)
+mean(col1$energy) - mean(col2$energy)
+mean(col1$explicit) - mean(col2$explicit)
+mean(col1$instrumentalness) - mean(col2$instrumentalness)
+mean(col1$key) - mean(col2$key)
+mean(col1$liveness) - mean(col2$liveness)
+mean(col1$loudness) - mean(col2$loudness)
+mean(col1$mode) - mean(col2$mode)
+mean(col1$speechiness) - mean(col2$speechiness)
+mean(col1$tempo) - mean(col2$tempo)
+mean(col1$valence) - mean(col2$valence)
+```
+
+### My observations:
+
+### 1. acousticness (A confidence measure from 0.0 to 1.0 of whether the track is acoustic) is lower for songs that didn't get an award than for songs that got an award.
+
+### 2. duration_ms (The duration of the track in milliseconds) is higher for songs that didn't get an award than for songs that got an award.
+
+### 3. explicit (Whether or not the track has explicit lyrics) is higher for songs that didn't get an award than for songs that got an award.
+
+### 4. tempo (The overall estimated tempo of a track in beats per minute (BPM)) is higher for songs that didn't get an award than for songs that got an award.
+
+### 5. key (The estimated overall key of the track) is lower for songs that didn't get an award than for songs that got an award.
+
+### 6. loudness (The overall loudness of a track in decibels (dB)) is higher for songs that didn't get an award than for songs that got an award.
+
+### Understanding the observations:
+### We can clearly see from the majority of observations stated above that the songs that have got an award have lower audio feature values (duration_ms,explicit,tempo,loudness) than for songs that didn't get an award.
+
+### Now visualizing the difference between the audio features of songs based on the above observations.
+
+### acousticness and duration_ms (for songs that got an award)
+```{r}
+ggplot(col1, aes(x=acousticness, y=duration_ms)) + geom_point(size=1) + xlab("acousticness") +ylab("duration_ms")
+```
+
+### acousticness and duration_ms (for songs that didn't get an award)
+```{r}
+ggplot(col2, aes(x=acousticness, y=duration_ms)) + geom_point(size=1) + xlab("acousticness") +ylab("duration_ms")
+```
+
+### explicit and tempo (for songs that got an award)
+```{r}
+ggplot(col1, aes(x=explicit, y=tempo)) + geom_point(size=1) + xlab("explicit") +ylab("tempo")
+```
+
+### explicit and tempo (for songs that didn't get an award)
+```{r}
+ggplot(col2, aes(x=explicit, y=tempo)) + geom_point(size=1) + xlab("explicit") +ylab("tempo")
+```
+
+### key and loudness (for songs that got an award)
+```{r}
+ggplot(col1, aes(x=key, y=loudness)) + geom_point(size=1) + xlab("key") +ylab("loudness")
+```
+
+### key and loudness (for songs that didn't get an award)
+```{r}
+ggplot(col2, aes(x=key, y=loudness)) + geom_point(size=1) + xlab("key") +ylab("loudness")
+```
+
+### 8. Checking which category of songs (here category is of two types - songs that have got an award and songs that have not got an award) has higher popularity than the other by looking at their average.
+```{r}
+mean(col1$popularity)
+mean(col2$popularity)
+```
+
+### Understanding from the previous observations:
+### The reason why songs that didn't get an award have been more popular than for songs that have got an award is because the majority of observations stated previously show that the songs that have got an award have lower audio feature values (duration_ms,explicit,tempo,loudness) than for songs that didn't get an award.
+
+### 9. To check what music genre has very high musical positiveness and what music genre has very high musical negativeness conveyed by a track.
+```{r}
+genres %>%
+  filter(valence>0.95) %>%
+  select(genres)
+```
+
+
+```{r}
+genres %>%
+  filter(valence<0.03) %>%
+  select(genres)
+```
+
+### 10. Finding and visualizing the popularity of songs that have got an award and popularity of songs that have not got an award in the 20th century and 21st century.
+
+```{r}
+col1 %>% filter(year.y<2001) %>% summarise(avgp=mean(popularity),avgy=mean(year.y)) 
+```
+
+```{r}
+ggplot(col1 %>% filter(year.y<2001) %>%select(popularity,year.y),aes(x=year.y,fill=popularity)) + geom_bar() +xlab("20th Century") +ylab("Popularity of songs that have got an award")
+```
+
+```{r}
+col2 %>% filter(year.y<2001) %>% summarise(avgp=mean(popularity),avgy=mean(year.y)) 
+```
+
+```{r}
+ggplot(col2 %>% filter(year.y<2001) %>%select(popularity,year.y),aes(x=year.y,fill=popularity)) + geom_bar() +xlab("20th Century") +ylab("Popularity of songs that have not got an award")
+```
+
+```{r}
+col1 %>% filter(year.y>2001) %>% summarise(avgp=mean(popularity),avgy=mean(year.y))
+```
+
+```{r}
+ggplot(col1 %>% filter(year.y>2001) %>%select(popularity,year.y),aes(x=year.y,fill=popularity)) + geom_bar() +xlab("21st Century") +ylab("Popularity of songs that have got an award")
+```
+
+```{r}
+col2 %>% filter(year.y>2001) %>% summarise(avgp=mean(popularity),avgy=mean(year.y))
+```
+
+```{r}
+ggplot(col2 %>% filter(year.y>2001) %>%select(popularity,year.y),aes(x=year.y,fill=popularity)) + geom_bar() +xlab("21st Century") +ylab("Popularity of songs that have not got an award")
+```
+
+### Inference:
+
+### The popularity of songs that have not got an award is greater than the popularity of songs that have got an award in the 20th century.
+
+### The popularity of songs that have not got an award is greater than the popularity of songs that have got an award in the 21st century.
+
+### Conclusion:
+
+### I have assessed how different audio features of a song influence/impact people in different ways and found out what audio features were responsible for songs that got awards and for the ones that didn't get an award by using two datasets.
+
+### Acknowledgements:
+
+### I would like to thank Yamac Eren Ay and Raphael Fontes for providing the datasets on Kaggle.
+
+* * *
