@@ -79,7 +79,7 @@ summary(grammy)
 
 * * *
 
-### Frame your objectives
+### My objectives:
 
 ### 1. To find out the number of positive and negative songs in the 20th century and 21st century based on the valence audio feature.
 ```{r}
